@@ -24,37 +24,26 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-mustache</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<optional>true</optional>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
 		<!-- RabbitMQ -->
 		<dependency>
 			<groupId>com.pivotal.rabbitmq</groupId>
 			<artifactId>reactor-rabbitmq-streams-autoconfigure</artifactId>
 		</dependency>
 
-<!--		<dependency>-->
-<!--			<groupId>commons-beanutils</groupId>-->
-<!--			<artifactId>commons-beanutils</artifactId>-->
-<!--			<version>1.9.4</version>-->
-<!--		</dependency>-->
-
-
 		<!-- Utils -->
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
 			<version>${guava.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>
 		</dependency>
 	</dependencies>
 
