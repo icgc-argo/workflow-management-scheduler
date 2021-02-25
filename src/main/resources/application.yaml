@@ -1,0 +1,42 @@
+logging.level:
+  com.pivotal: debug
+  #  org.springframework: debug
+  org.icgc.argo: debug
+
+server.port: 8086
+
+gatekeeper.url: "http://localhost:8080/graphql"
+
+rabbit:
+  default-endpoint-name: standalone
+  endpoints:
+    standalone:
+      host: localhost
+      port: 5672
+      username: user
+      password: pass
+
+scheduler.consumer.topology:
+  queueName: "scheduler-queue"
+  topicExchangeName: "gatekeeper-out"
+  bufferDurationSec: 10
+scheduler.producer.topology:
+  queueName: "gatekeeper-in-queue"
+  topicExchangeName: "gatekeeper-in"
+
+scheduler:
+  wfParamsTemplate: "<SCHEDULED_DIR>"
+  dirValues:
+    - "nfs-local/nfs-1"
+    - "nfs-local/nfs-2"
+scheduler.workflows:
+  - url: "https://github.com/jaserud/hello.git"
+    name: "hello"
+    maxTotalRuns: 2
+    maxRunsPerDir: 1
+  - url: "http://sanger-wgs"
+    name: "sanger-wgs"
+    maxTotalRuns: 4
+    maxRunsPerDir: 2
+
+
