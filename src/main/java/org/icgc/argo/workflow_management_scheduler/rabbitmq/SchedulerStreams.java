@@ -26,10 +26,20 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import javax.annotation.PostConstruct;
+
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
 public class SchedulerStreams {
+    private static final Set<RunState> ACTION_ON_STATES =
+     Set.of(
+             RunState.QUEUED,
+             RunState.COMPLETE,
+             RunState.CANCELED,
+             RunState.SYSTEM_ERROR,
+             RunState.EXECUTOR_ERROR);
+
   @Value("${scheduler.producer.topology.queueName}")
   private String producerQueueName;
 
@@ -45,22 +55,22 @@ public class SchedulerStreams {
   @Value("${scheduler.consumer.topology.bufferDurationSec}")
   private Long bufferDurationSec;
 
-  private final OnDemandSource<WfMgmtRunMsg> sourceSink = new OnDemandSource<>("sourceSink");
-
   private final RabbitEndpointService rabbit;
   private final GatekeeperClient gatekeeperClient;
   private final DirScheduler dirScheduler;
 
-  private static final Set<RunState> ACTION_ON_STATES =
-      Set.of(
-          RunState.QUEUED,
-          RunState.COMPLETE,
-          RunState.CANCELED,
-          RunState.SYSTEM_ERROR,
-          RunState.EXECUTOR_ERROR);
+  private final OnDemandSource<WfMgmtRunMsg> sourceSink = new OnDemandSource<>("sourceSink");
 
-  @Bean
-  public Disposable schedulerProducer() {
+  private Disposable schedulerProducer;
+  private Disposable schedulerConsumer;
+
+  @PostConstruct
+  public void init() {
+        this.schedulerProducer = createSchedulerProducer();
+        this.schedulerConsumer = createSchedulerConsumer();
+  }
+
+  private Disposable createSchedulerProducer() {
     val routingKeys = "#";
     return createTransProducerStream(
             rabbit, producerTopicExchangeName, producerQueueName, routingKeys)
@@ -72,8 +82,7 @@ public class SchedulerStreams {
             });
   }
 
-  @Bean
-  public Disposable consumerStream() {
+  private Disposable createSchedulerConsumer() {
     val routingKeys = ACTION_ON_STATES.stream().map(RunState::toString).toArray(String[]::new);
     return createTransConsumerStream(
             rabbit, consumerTopicExchangeName, consumerQueueName, routingKeys)

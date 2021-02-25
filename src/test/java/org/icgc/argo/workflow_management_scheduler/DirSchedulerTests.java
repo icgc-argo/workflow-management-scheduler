@@ -18,6 +18,8 @@ public class DirSchedulerTests {
   private static final String WGS_NAME = "WGS_NAME";
   private static final String ALIGN_WF_URL = "http://ALIGN";
   private static final String WGS_SANGER_WF_URL = "http://WGS_SANGER";
+  private static final String HELLO_WF_URL = "http://HELLO";
+
   private static final String WORK_DIR_TEMPLATE = "<SCHEDULED_DIR>";
   private static final String WORK_DIR_0 = "/nfs/dir-0";
   private static final String WORK_DIR_1 = "/nfs/dir-1";
@@ -26,7 +28,7 @@ public class DirSchedulerTests {
       new DirSchedulerConfig(
           "<SCHEDULED_DIR>",
           ImmutableList.of(WORK_DIR_0, WORK_DIR_1),
-          List.of(
+          ImmutableList.of(
               new WorkflowProps(ALIGN_NAME, ALIGN_WF_URL, 2, 1),
               new WorkflowProps(WGS_NAME, WGS_SANGER_WF_URL, 4, 2)));
 
@@ -60,6 +62,25 @@ public class DirSchedulerTests {
             createRun("run-2", RunState.INITIALIZING, WGS_SANGER_WF_URL, WORK_DIR_0),
             createRun("run-3", RunState.INITIALIZING, WGS_SANGER_WF_URL, WORK_DIR_1),
             createRun("run-4", RunState.INITIALIZING, WGS_SANGER_WF_URL, WORK_DIR_1));
+
+    assertThat(initializedRuns).hasSameElementsAs(expectedInitializedRuns);
+  }
+
+
+  @Test
+  void testScheduleRunsNotUsingTemplate() {
+    val allRuns =
+            ImmutableList.of(
+                    createRun("run-1", RunState.RUNNING, ALIGN_WF_URL, WORK_DIR_0),
+                    createRun("run-2", RunState.RUNNING, ALIGN_WF_URL, WORK_DIR_1),
+                    createRun("run-3", RunState.QUEUED, HELLO_WF_URL, "emptyDir"),
+                    createRun("run-4", RunState.QUEUED,  HELLO_WF_URL, null));
+    val initializedRuns = dirScheduler.getNextInitializedRuns(allRuns);
+
+    val expectedInitializedRuns =
+            List.of(
+                    createRun("run-3", RunState.INITIALIZING, HELLO_WF_URL, "emptyDir"),
+                    createRun("run-4", RunState.INITIALIZING, HELLO_WF_URL, null));
 
     assertThat(initializedRuns).hasSameElementsAs(expectedInitializedRuns);
   }

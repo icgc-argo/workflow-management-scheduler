@@ -19,13 +19,13 @@ import org.springframework.context.annotation.Configuration;
 public class DirSchedulerConfig {
   String wfParamsTemplate;
   ImmutableList<String> dirValues;
-  List<WorkflowProps> workflows;
+  ImmutableList<WorkflowProps> workflows;
 
   public void setDirValues(List<String> dirValues) {
     this.dirValues = ImmutableList.copyOf(dirValues);
   }
 
-  //    public void setWorkflows(List<WorkflowProps> workflows) {
-  //        this.workflows =                                 ImmutableList.copyOf(workflows);
-  //    }
+  public void setWorkflows(List<WorkflowProps> workflows) {
+      this.workflows = ImmutableList.copyOf(workflows);
+  }
 }

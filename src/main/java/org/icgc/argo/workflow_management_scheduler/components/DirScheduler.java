@@ -44,7 +44,7 @@ public class DirScheduler {
     val activeRuns =
         allRuns.stream().filter(Run::isNotQueued).collect(toCollection(ArrayList::new));
 
-    val scheduledRuns = getNextScheduledRuns(activeRuns, runsWaitingForDir);
+    val scheduledRuns = runsWaitingForDir.size() > 0 ? getNextScheduledRuns(activeRuns, runsWaitingForDir) : List.<Run>of();
 
     initializedRuns.addAll(scheduledRuns);
 
@@ -52,7 +52,7 @@ public class DirScheduler {
   }
 
   private List<Run> getNextScheduledRuns(List<Run> activeRuns, List<Run> queuedRuns) {
-    val allResourceValues = config.getDirValues();
+    val allDirs = config.getDirValues();
     val workflowProps = config.getWorkflows();
 
     val wfUrlToQueuedRunsMap = queuedRuns.stream().collect(groupingBy(Run::getWorkflowUrl));
@@ -60,10 +60,12 @@ public class DirScheduler {
 
     // construct map of dir value to runs
     val dirToRunsMap =
-        activeRuns.stream().collect(groupingBy(run -> run.getWorkflowEngineParams().getWorkDir()));
+        activeRuns.stream()
+                .filter(run -> allDirs.contains(run.getWorkflowEngineParams().getWorkDir()))
+                .collect(groupingBy(run -> run.getWorkflowEngineParams().getWorkDir()));
     Map<String, List<Run>> updatingDirValuesToRunsMap = new HashMap<>(dirToRunsMap);
     // add any dir values that aren't in use to the map
-    allResourceValues.forEach(
+    allDirs.forEach(
         dir -> {
           if (!updatingDirValuesToRunsMap.containsKey(dir)) {
             updatingDirValuesToRunsMap.put(dir, new ArrayList<>());
@@ -84,7 +86,7 @@ public class DirScheduler {
           }
 
           val allocatedResourceValues =
-              getNextAvailableResourceValue(
+              getScheduableDirs(
                   updatingDirValuesToRunsMap, prop.getMaxRunsPerDir(), numRunsToInit);
 
           allocatedResourceValues.forEach(
@@ -123,7 +125,7 @@ public class DirScheduler {
     return input;
   }
 
-  private Stream<String> getNextAvailableResourceValue(
+  private Stream<String> getScheduableDirs(
       Map<String, List<Run>> newResourcesValuesToRunsPart,
       Integer maxPerPartition,
       Integer maxResourcesToGet) {
