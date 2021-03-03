@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.icgc.argo.workflow_management_scheduler.config.DirSchedulerConfig;
 import org.icgc.argo.workflow_management_scheduler.model.Run;
+import org.icgc.argo.workflow_management_scheduler.model.WorkflowProps;
 import org.icgc.argo.workflow_management_scheduler.rabbitmq.schema.RunState;
 import org.springframework.stereotype.Component;
 
@@ -20,9 +21,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class DirScheduler {
   private final DirSchedulerConfig config;
+  private final Map<String, Integer> workflowUrlToCosts;
 
   public DirScheduler(DirSchedulerConfig config) {
     this.config = config;
+    this.workflowUrlToCosts =
+        config.getWorkflows().stream()
+            .collect(toMap(WorkflowProps::getUrl, WorkflowProps::getCost));
     log.debug("DirScheduler component created with config: {}", config);
   }
 
@@ -44,7 +49,10 @@ public class DirScheduler {
     val activeRuns =
         allRuns.stream().filter(Run::isNotQueued).collect(toCollection(ArrayList::new));
 
-    val scheduledRuns = runsWaitingForDir.size() > 0 ? getNextScheduledRuns(activeRuns, runsWaitingForDir) : List.<Run>of();
+    val scheduledRuns =
+        runsWaitingForDir.size() > 0
+            ? getNextScheduledRuns(activeRuns, runsWaitingForDir)
+            : List.<Run>of();
 
     initializedRuns.addAll(scheduledRuns);
 
@@ -58,52 +66,57 @@ public class DirScheduler {
     val wfUrlToQueuedRunsMap = queuedRuns.stream().collect(groupingBy(Run::getWorkflowUrl));
     val wfUrlToActiveRunsMap = activeRuns.stream().collect(groupingBy(Run::getWorkflowUrl));
 
-    // construct map of dir value to runs
-    val dirToRunsMap =
+    // map of current dir values in use to runs
+    val dirValueToRunsMap =
         activeRuns.stream()
-                .filter(run -> allDirs.contains(run.getWorkflowEngineParams().getWorkDir()))
-                .collect(groupingBy(run -> run.getWorkflowEngineParams().getWorkDir()));
-    Map<String, List<Run>> updatingDirValuesToRunsMap = new HashMap<>(dirToRunsMap);
-    // add any dir values that aren't in use to the map
+            .filter(run -> allDirs.contains(run.getWorkflowEngineParams().getWorkDir()))
+            .collect(groupingBy(run -> run.getWorkflowEngineParams().getWorkDir()));
+
+    // construct map that will be updated as runs are scheduled on dirs
+    Map<String, List<Run>> updatedDirValueToRunsMap = new HashMap<>(dirValueToRunsMap);
     allDirs.forEach(
         dir -> {
-          if (!updatingDirValuesToRunsMap.containsKey(dir)) {
-            updatingDirValuesToRunsMap.put(dir, new ArrayList<>());
+          // add any dir values that aren't in use to the map
+          if (!updatedDirValueToRunsMap.containsKey(dir)) {
+            updatedDirValueToRunsMap.put(dir, new ArrayList<>());
           }
         });
 
     List<Run> initializedRuns = new ArrayList<>();
     workflowProps.forEach(
-        prop -> {
-          val lookupKey = prop.getUrl();
-          val queuedRunsForUrl = wfUrlToQueuedRunsMap.getOrDefault(lookupKey, List.of());
-          val activeRunsForUrl = wfUrlToActiveRunsMap.getOrDefault(lookupKey, List.of());
+        wfProp -> {
+          val wfUrl = wfProp.getUrl();
+          val maxRunsForWfUrl = wfProp.getMaxTotalRuns();
 
-          val numRunsCanBeInit = prop.getMaxTotalRuns() - activeRunsForUrl.size();
-          val numRunsToInit = Math.min(numRunsCanBeInit, queuedRunsForUrl.size());
+          val queuedRunsWithWfUrl = wfUrlToQueuedRunsMap.getOrDefault(wfUrl, List.of());
+          val activeRunsWithWfUrl = wfUrlToActiveRunsMap.getOrDefault(wfUrl, List.of());
+
+          // numRuns to Init for url is either fill up to max or all the queued
+          val numRunsToInit =
+              Math.min(maxRunsForWfUrl - activeRunsWithWfUrl.size(), queuedRunsWithWfUrl.size());
           if (numRunsToInit <= 0) {
             return;
           }
 
-          val allocatedResourceValues =
-              getScheduableDirs(
-                  updatingDirValuesToRunsMap, prop.getMaxRunsPerDir(), numRunsToInit);
+          val allocatedWorkDirValues =
+              getStreamOfNextSchedulableDirs(
+                  updatedDirValueToRunsMap, wfProp.getCost(), numRunsToInit);
 
-          allocatedResourceValues.forEach(
+          allocatedWorkDirValues.forEach(
               value -> {
-                val nextRunToInit = queuedRunsForUrl.remove(queuedRunsForUrl.size() - 1);
+                val nextRunToInit = queuedRunsWithWfUrl.remove(queuedRunsWithWfUrl.size() - 1);
                 // update template params
                 nextRunToInit.setWorkflowParamsJsonStr(
-                    templateWithValue(
+                    replaceTemplateWithValue(
                         nextRunToInit.getWorkflowParamsJsonStr(),
-                        config.getWfParamsTemplate(),
+                        config.getWorkDirTemplate(),
                         value));
                 // set workdir
                 nextRunToInit.getWorkflowEngineParams().setWorkDir(value);
                 // set to INIT
                 nextRunToInit.setState(RunState.INITIALIZING);
 
-                updatingDirValuesToRunsMap.get(value).add(nextRunToInit);
+                updatedDirValueToRunsMap.get(value).add(nextRunToInit);
                 initializedRuns.add(nextRunToInit);
               });
         });
@@ -115,29 +128,37 @@ public class DirScheduler {
     return run != null
         && run.getWorkflowEngineParams() != null
         && run.getWorkflowEngineParams().getWorkDir() != null
-        && run.getWorkflowEngineParams().getWorkDir().equals(config.getWfParamsTemplate());
+        && run.getWorkflowEngineParams().getWorkDir().equals(config.getWorkDirTemplate());
   }
 
-  private String templateWithValue(String input, String templateRegex, String templateValue) {
+  private String replaceTemplateWithValue(String input, String templateRegex, String templateValue) {
     if (input.contains(templateRegex)) {
       return input.replaceAll(templateRegex, templateValue);
     }
     return input;
   }
 
-  private Stream<String> getScheduableDirs(
-      Map<String, List<Run>> newResourcesValuesToRunsPart,
-      Integer maxPerPartition,
-      Integer maxResourcesToGet) {
-    return newResourcesValuesToRunsPart.entrySet().stream()
+  private Stream<String> getStreamOfNextSchedulableDirs(
+      Map<String, List<Run>> workDirToRunsMap, Integer cost, Integer maxWorkDirsRequested) {
+    return workDirToRunsMap.entrySet().stream()
         .flatMap(
             entry -> {
-              val numValuesToReturn = maxPerPartition - entry.getValue().size();
-              if (numValuesToReturn > 0) {
-                return nCopies(numValuesToReturn, entry.getKey()).stream();
+              val dir = entry.getKey();
+              val runsInDir = entry.getValue();
+
+              val costInDir =
+                  runsInDir.stream()
+                      .map(Run::getWorkflowUrl)
+                      .map(workflowUrlToCosts::get)
+                      .reduce(0, Integer::sum);
+
+              val availableCost = config.getMaxCostPerDir() - costInDir;
+              if (availableCost >= cost) {
+                val runsInAvailableCost = availableCost / cost;
+                return nCopies(runsInAvailableCost, dir).stream();
               }
               return Stream.of();
             })
-        .limit(maxResourcesToGet);
+        .limit(maxWorkDirsRequested);
   }
 }

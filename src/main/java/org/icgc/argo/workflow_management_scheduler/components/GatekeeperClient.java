@@ -26,7 +26,7 @@ public class GatekeeperClient {
   private String url;
 
   public Mono<List<Run>> getAllRuns() {
-    return getAllRuns(0)
+    return getRunsInPage(0)
         // Expand here is basically being used to recursively get the next page of runs from
         // gatekeeper. It returns a Flux of the Object in each sub Mono.
         .expand(
@@ -34,7 +34,7 @@ public class GatekeeperClient {
               val currentPageNum = searchResultTuple2.getT1();
               val searchResult = searchResultTuple2.getT2();
               if (searchResult.getInfo().getHasNextFrom()) {
-                return getAllRuns(currentPageNum + 1);
+                return getRunsInPage(currentPageNum + 1);
               } else {
                 return Mono.empty();
               }
@@ -48,7 +48,7 @@ public class GatekeeperClient {
             });
   }
 
-  private Mono<Tuple2<Integer, GqlResult.ActiveRunsSearchResult>> getAllRuns(Integer page) {
+  private Mono<Tuple2<Integer, GqlResult.ActiveRunsSearchResult>> getRunsInPage(Integer page) {
     return WebClient.create()
         .post()
         .uri(url)

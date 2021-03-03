@@ -17,7 +17,8 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "scheduler")
 @ToString
 public class DirSchedulerConfig {
-  String wfParamsTemplate;
+  String workDirTemplate;
+  Integer maxCostPerDir;
   ImmutableList<String> dirValues;
   ImmutableList<WorkflowProps> workflows;
 
@@ -26,6 +27,6 @@ public class DirSchedulerConfig {
   }
 
   public void setWorkflows(List<WorkflowProps> workflows) {
-      this.workflows = ImmutableList.copyOf(workflows);
+    this.workflows = ImmutableList.copyOf(workflows);
   }
 }

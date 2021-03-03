@@ -25,18 +25,17 @@ scheduler.producer.topology:
   topicExchangeName: "gatekeeper-in"
 
 scheduler:
-  wfParamsTemplate: "<SCHEDULED_DIR>"
+  workDirTemplate: "<SCHEDULED_DIR>"
+  maxCostPerDir: 3
   dirValues:
     - "nfs-local/nfs-1"
     - "nfs-local/nfs-2"
-scheduler.workflows:
-  - url: "https://github.com/jaserud/hello.git"
-    name: "hello"
-    maxTotalRuns: 2
-    maxRunsPerDir: 1
-  - url: "http://sanger-wgs"
-    name: "sanger-wgs"
-    maxTotalRuns: 4
-    maxRunsPerDir: 2
-
-
+  workflows:
+    - url: "https://github.com/jaserud/hello.git"
+      name: "hello"
+      maxTotalRuns: 2
+      cost: 2
+    - url: "http://sanger-wgs"
+      name: "sanger-wgs"
+      maxTotalRuns: 4
+      cost: 1

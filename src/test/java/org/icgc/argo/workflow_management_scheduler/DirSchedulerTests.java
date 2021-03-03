@@ -23,16 +23,34 @@ public class DirSchedulerTests {
   private static final String WORK_DIR_TEMPLATE = "<SCHEDULED_DIR>";
   private static final String WORK_DIR_0 = "/nfs/dir-0";
   private static final String WORK_DIR_1 = "/nfs/dir-1";
+  private static final Integer MAX_COST_PER_DIR = 2;
 
   private static final DirSchedulerConfig config =
       new DirSchedulerConfig(
           "<SCHEDULED_DIR>",
+          MAX_COST_PER_DIR,
           ImmutableList.of(WORK_DIR_0, WORK_DIR_1),
           ImmutableList.of(
-              new WorkflowProps(ALIGN_NAME, ALIGN_WF_URL, 2, 1),
-              new WorkflowProps(WGS_NAME, WGS_SANGER_WF_URL, 4, 2)));
+              new WorkflowProps(ALIGN_NAME, ALIGN_WF_URL, 2, 2),
+              new WorkflowProps(WGS_NAME, WGS_SANGER_WF_URL, 4, 1)));
 
   private final DirScheduler dirScheduler = new DirScheduler(config);
+
+  @Test
+  void testOther() {
+    val allRuns =
+        ImmutableList.of(
+            createRun("run-1", RunState.RUNNING, WGS_SANGER_WF_URL, WORK_DIR_0),
+            createRun("run-2", RunState.RUNNING, WGS_SANGER_WF_URL, WORK_DIR_1),
+            createRun("run-3", RunState.QUEUED, ALIGN_WF_URL, WORK_DIR_TEMPLATE),
+            createRun("run-4", RunState.QUEUED, WGS_SANGER_WF_URL, WORK_DIR_TEMPLATE));
+
+    val initializedRuns = dirScheduler.getNextInitializedRuns(allRuns);
+    val expectedInitializedRuns =
+        List.of(createRun("run-4", RunState.INITIALIZING, WGS_SANGER_WF_URL, WORK_DIR_1));
+
+    assertThat(initializedRuns).hasSameElementsAs(expectedInitializedRuns);
+  }
 
   @Test
   void testBasicSchedule() {
@@ -66,21 +84,20 @@ public class DirSchedulerTests {
     assertThat(initializedRuns).hasSameElementsAs(expectedInitializedRuns);
   }
 
-
   @Test
   void testScheduleRunsNotUsingTemplate() {
     val allRuns =
-            ImmutableList.of(
-                    createRun("run-1", RunState.RUNNING, ALIGN_WF_URL, WORK_DIR_0),
-                    createRun("run-2", RunState.RUNNING, ALIGN_WF_URL, WORK_DIR_1),
-                    createRun("run-3", RunState.QUEUED, HELLO_WF_URL, "emptyDir"),
-                    createRun("run-4", RunState.QUEUED,  HELLO_WF_URL, null));
+        ImmutableList.of(
+            createRun("run-1", RunState.RUNNING, ALIGN_WF_URL, WORK_DIR_0),
+            createRun("run-2", RunState.RUNNING, ALIGN_WF_URL, WORK_DIR_1),
+            createRun("run-3", RunState.QUEUED, HELLO_WF_URL, "emptyDir"),
+            createRun("run-4", RunState.QUEUED, HELLO_WF_URL, null));
     val initializedRuns = dirScheduler.getNextInitializedRuns(allRuns);
 
     val expectedInitializedRuns =
-            List.of(
-                    createRun("run-3", RunState.INITIALIZING, HELLO_WF_URL, "emptyDir"),
-                    createRun("run-4", RunState.INITIALIZING, HELLO_WF_URL, null));
+        List.of(
+            createRun("run-3", RunState.INITIALIZING, HELLO_WF_URL, "emptyDir"),
+            createRun("run-4", RunState.INITIALIZING, HELLO_WF_URL, null));
 
     assertThat(initializedRuns).hasSameElementsAs(expectedInitializedRuns);
   }

@@ -10,6 +10,7 @@ import com.pivotal.rabbitmq.stream.Transaction;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
+import javax.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -20,25 +21,22 @@ import org.icgc.argo.workflow_management_scheduler.rabbitmq.schema.EngineParams;
 import org.icgc.argo.workflow_management_scheduler.rabbitmq.schema.RunState;
 import org.icgc.argo.workflow_management_scheduler.rabbitmq.schema.WfMgmtRunMsg;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import javax.annotation.PostConstruct;
-
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
 public class SchedulerStreams {
-    private static final Set<RunState> ACTION_ON_STATES =
-     Set.of(
-             RunState.QUEUED,
-             RunState.COMPLETE,
-             RunState.CANCELED,
-             RunState.SYSTEM_ERROR,
-             RunState.EXECUTOR_ERROR);
+  private static final Set<RunState> ACTION_ON_STATES =
+      Set.of(
+          RunState.QUEUED,
+          RunState.COMPLETE,
+          RunState.CANCELED,
+          RunState.SYSTEM_ERROR,
+          RunState.EXECUTOR_ERROR);
 
   @Value("${scheduler.producer.topology.queueName}")
   private String producerQueueName;
@@ -66,8 +64,8 @@ public class SchedulerStreams {
 
   @PostConstruct
   public void init() {
-        this.schedulerProducer = createSchedulerProducer();
-        this.schedulerConsumer = createSchedulerConsumer();
+    this.schedulerProducer = createSchedulerProducer();
+    this.schedulerConsumer = createSchedulerConsumer();
   }
 
   private Disposable createSchedulerProducer() {
@@ -87,7 +85,7 @@ public class SchedulerStreams {
     return createTransConsumerStream(
             rabbit, consumerTopicExchangeName, consumerQueueName, routingKeys)
         .receive()
-        .doOnNext(tx -> log.info("Recieved: " + tx.get()))
+        .doOnNext(tx -> log.info("Received: " + tx.get()))
         .filter(
             tx -> {
               if (ACTION_ON_STATES.contains(tx.get().getState())) {

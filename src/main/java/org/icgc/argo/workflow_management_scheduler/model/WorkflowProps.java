@@ -11,5 +11,5 @@ public class WorkflowProps {
   String name;
   String url;
   Integer maxTotalRuns;
-  Integer maxRunsPerDir;
+  Integer cost;
 }
