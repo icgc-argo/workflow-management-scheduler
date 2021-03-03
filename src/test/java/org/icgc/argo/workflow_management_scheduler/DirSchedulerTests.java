@@ -37,23 +37,7 @@ public class DirSchedulerTests {
   private final DirScheduler dirScheduler = new DirScheduler(config);
 
   @Test
-  void testOther() {
-    val allRuns =
-        ImmutableList.of(
-            createRun("run-1", RunState.RUNNING, WGS_SANGER_WF_URL, WORK_DIR_0),
-            createRun("run-2", RunState.RUNNING, WGS_SANGER_WF_URL, WORK_DIR_1),
-            createRun("run-3", RunState.QUEUED, ALIGN_WF_URL, WORK_DIR_TEMPLATE),
-            createRun("run-4", RunState.QUEUED, WGS_SANGER_WF_URL, WORK_DIR_TEMPLATE));
-
-    val initializedRuns = dirScheduler.getNextInitializedRuns(allRuns);
-    val expectedInitializedRuns =
-        List.of(createRun("run-4", RunState.INITIALIZING, WGS_SANGER_WF_URL, WORK_DIR_1));
-
-    assertThat(initializedRuns).hasSameElementsAs(expectedInitializedRuns);
-  }
-
-  @Test
-  void testBasicSchedule() {
+  void testBasicScheduling() {
     val runs =
         List.of(
             createRun("run-1", RunState.RUNNING, ALIGN_WF_URL, WORK_DIR_0),
@@ -66,26 +50,8 @@ public class DirSchedulerTests {
   }
 
   @Test
-  void testMaxRunPerDir() {
-    val allRuns =
-        ImmutableList.of(
-            createRun("run-1", RunState.RUNNING, WGS_SANGER_WF_URL, WORK_DIR_0),
-            createRun("run-2", RunState.QUEUED, WGS_SANGER_WF_URL, WORK_DIR_TEMPLATE),
-            createRun("run-3", RunState.QUEUED, WGS_SANGER_WF_URL, WORK_DIR_TEMPLATE),
-            createRun("run-4", RunState.QUEUED, WGS_SANGER_WF_URL, WORK_DIR_TEMPLATE));
-    val initializedRuns = dirScheduler.getNextInitializedRuns(allRuns);
-
-    val expectedInitializedRuns =
-        List.of(
-            createRun("run-2", RunState.INITIALIZING, WGS_SANGER_WF_URL, WORK_DIR_0),
-            createRun("run-3", RunState.INITIALIZING, WGS_SANGER_WF_URL, WORK_DIR_1),
-            createRun("run-4", RunState.INITIALIZING, WGS_SANGER_WF_URL, WORK_DIR_1));
-
-    assertThat(initializedRuns).hasSameElementsAs(expectedInitializedRuns);
-  }
-
-  @Test
-  void testScheduleRunsNotUsingTemplate() {
+  void testCanScheduleRunsNotNeedingDirs() {
+    // currently running leaves no available dirs
     val allRuns =
         ImmutableList.of(
             createRun("run-1", RunState.RUNNING, ALIGN_WF_URL, WORK_DIR_0),
@@ -94,10 +60,53 @@ public class DirSchedulerTests {
             createRun("run-4", RunState.QUEUED, HELLO_WF_URL, null));
     val initializedRuns = dirScheduler.getNextInitializedRuns(allRuns);
 
+    // runs that don't need dirs are still initialized
     val expectedInitializedRuns =
         List.of(
             createRun("run-3", RunState.INITIALIZING, HELLO_WF_URL, "emptyDir"),
             createRun("run-4", RunState.INITIALIZING, HELLO_WF_URL, null));
+
+    assertThat(initializedRuns).hasSameElementsAs(expectedInitializedRuns);
+  }
+
+  @Test
+  void testMaxCostPerDirIsMaintained() {
+    // we have one workflow which takes cost of 1 running in a dir which has max cost of 2
+    val allRuns =
+            ImmutableList.of(
+                    createRun("run-1", RunState.RUNNING, WGS_SANGER_WF_URL, WORK_DIR_0),
+                    createRun("run-2", RunState.QUEUED, WGS_SANGER_WF_URL, WORK_DIR_TEMPLATE),
+                    createRun("run-3", RunState.QUEUED, WGS_SANGER_WF_URL, WORK_DIR_TEMPLATE),
+                    createRun("run-4", RunState.QUEUED, WGS_SANGER_WF_URL, WORK_DIR_TEMPLATE),
+                    createRun("run-5", RunState.QUEUED, WGS_SANGER_WF_URL, WORK_DIR_TEMPLATE));
+    val initializedRuns = dirScheduler.getNextInitializedRuns(allRuns);
+
+    // expect 4 to be init since queued are cost 1 and we have 1 cost in the first dir plus 2 in the next
+    val expectedInitializedRuns =
+            List.of(
+                    createRun("run-3", RunState.INITIALIZING, WGS_SANGER_WF_URL, WORK_DIR_0),
+                    createRun("run-4", RunState.INITIALIZING, WGS_SANGER_WF_URL, WORK_DIR_1),
+                    createRun("run-5", RunState.INITIALIZING, WGS_SANGER_WF_URL, WORK_DIR_1));
+
+    assertThat(initializedRuns).hasSameElementsAs(expectedInitializedRuns);
+  }
+
+  @Test
+  void testSchedulingMultipleTypesOfWorkflow() {
+    val allRuns =
+            ImmutableList.of(
+                    createRun("run-1", RunState.RUNNING, WGS_SANGER_WF_URL, WORK_DIR_0),
+                    createRun("run-2", RunState.QUEUED, ALIGN_WF_URL, WORK_DIR_TEMPLATE),
+                    createRun("run-3", RunState.QUEUED, WGS_SANGER_WF_URL, WORK_DIR_TEMPLATE),
+                    createRun("run-4", RunState.QUEUED, WGS_SANGER_WF_URL, WORK_DIR_TEMPLATE),
+                    createRun("run-5", RunState.QUEUED, ALIGN_WF_URL, WORK_DIR_TEMPLATE));
+
+    val initializedRuns = dirScheduler.getNextInitializedRuns(allRuns);
+
+    // there is enough room to schedule an align in work_dir_1 and one more sanger in work_dir_0
+    val expectedInitializedRuns =
+            List.of(createRun("run-5", RunState.INITIALIZING, ALIGN_WF_URL, WORK_DIR_1),
+                    createRun("run-4", RunState.INITIALIZING, WGS_SANGER_WF_URL, WORK_DIR_0));
 
     assertThat(initializedRuns).hasSameElementsAs(expectedInitializedRuns);
   }
