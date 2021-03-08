@@ -88,6 +88,7 @@ public class GatekeeperClient {
         + "        resume\n"
         + "        revision\n"
         + "        projectDir\n"
+        + "        workDir\n"
         + "        launchDir\n"
         + "        defaultContainer\n"
         + "        latest\n"
