@@ -131,7 +131,8 @@ public class DirScheduler {
         && run.getWorkflowEngineParams().getWorkDir().equals(config.getWorkDirTemplate());
   }
 
-  private String replaceTemplateWithValue(String input, String templateRegex, String templateValue) {
+  private String replaceTemplateWithValue(
+      String input, String templateRegex, String templateValue) {
     if (input.contains(templateRegex)) {
       return input.replaceAll(templateRegex, templateValue);
     }
