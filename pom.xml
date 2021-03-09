@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>org.icgc.argo</groupId>
-	<artifactId>workflow_management_scheduler</artifactId>
+	<artifactId>workflow-management-scheduler</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>workflow_management_scheduler</name>
-	<description>Collection of middleware for icgcargo/workflow management</description>
+	<name>workflow-management-scheduler</name>
+	<description>Middleware for icgcargo/workflow-management</description>
 	<properties>
 		<java.version>11</java.version>
 		<guava.version>29.0-jre</guava.version>
