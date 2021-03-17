@@ -48,7 +48,7 @@ public class GatekeeperClient {
             });
   }
 
-  private Mono<Tuple2<Integer, GqlResult.ActiveRunsSearchResult>> getRunsInPage(Integer page) {
+  private Mono<Tuple2<Integer, GqlResult.RunsSearchResult>> getRunsInPage(Integer page) {
     return WebClient.create()
         .post()
         .uri(url)
@@ -61,8 +61,8 @@ public class GatekeeperClient {
               val searchResult =
                   gqlResult != null
                           && gqlResult.getData() != null
-                          && gqlResult.getData().getActiveRuns() != null
-                      ? gqlResult.getData().getActiveRuns()
+                          && gqlResult.getData().getRuns() != null
+                      ? gqlResult.getData().getRuns()
                       : EMPTY_SEARCH_RESULT;
 
               return Tuples.of(page, searchResult);
@@ -71,7 +71,7 @@ public class GatekeeperClient {
 
   private static String createQuery(Integer from) {
     return "query  {\n"
-        + "  activeRuns (page: {from: "
+        + "  runs (page: {from: "
         + from
         + ", size: "
         + DEFAULT_PAGE_SIZE
