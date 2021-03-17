@@ -11,8 +11,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GqlResult {
-  public static final ActiveRunsSearchResult EMPTY_SEARCH_RESULT =
-      new ActiveRunsSearchResult(List.of(), new Info(false, 0L, 0));
+  public static final RunsSearchResult EMPTY_SEARCH_RESULT =
+      new RunsSearchResult(List.of(), new Info(false, 0L, 0));
 
   GqlData data;
 
@@ -21,14 +21,14 @@ public class GqlResult {
   @AllArgsConstructor
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class GqlData {
-    ActiveRunsSearchResult activeRuns;
+    RunsSearchResult runs;
   }
 
   @Data
   @NoArgsConstructor
   @AllArgsConstructor
   @JsonIgnoreProperties(ignoreUnknown = true)
-  public static class ActiveRunsSearchResult {
+  public static class RunsSearchResult {
     List<Run> content;
     Info info;
   }
