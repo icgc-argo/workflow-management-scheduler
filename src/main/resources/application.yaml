@@ -16,13 +16,12 @@ rabbit:
       username: user
       password: pass
 
-scheduler.consumer.topology:
-  queueName: "scheduler-queue"
-  topicExchangeName: "gatekeeper-out"
+scheduler.consumer:
+  queue: "scheduler-queue"
+  topicExchange: "gatekeeper-out"
   bufferDurationSec: 10
-scheduler.producer.topology:
-  queueName: "gatekeeper-in-queue"
-  topicExchangeName: "gatekeeper-in"
+scheduler.producer:
+  topicExchange: "gatekeeper-in"
 
 scheduler:
   workDirTemplate: "<SCHEDULED_DIR>"
@@ -31,7 +30,7 @@ scheduler:
     - "nfs-local/nfs-1"
     - "nfs-local/nfs-2"
   workflows:
-    - url: "https://github.com/jaserud/hello.git"
+    - url: "https:///hello"
       name: "hello"
       maxTotalRuns: 2
       cost: 2
