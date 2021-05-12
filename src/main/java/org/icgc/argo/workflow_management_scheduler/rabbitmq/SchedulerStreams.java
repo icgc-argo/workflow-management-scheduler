@@ -38,19 +38,16 @@ public class SchedulerStreams {
           RunState.SYSTEM_ERROR,
           RunState.EXECUTOR_ERROR);
 
-  @Value("${scheduler.producer.topology.queueName}")
-  private String producerQueueName;
-
-  @Value("${scheduler.producer.topology.topicExchangeName}")
+  @Value("${scheduler.producer.topicExchange}")
   private String producerTopicExchangeName;
 
-  @Value("${scheduler.consumer.topology.queueName}")
+  @Value("${scheduler.consumer.queue}")
   private String consumerQueueName;
 
-  @Value("${scheduler.consumer.topology.topicExchangeName}")
+  @Value("${scheduler.consumer.topicExchange}")
   private String consumerTopicExchangeName;
 
-  @Value("${scheduler.consumer.topology.bufferDurationSec}")
+  @Value("${scheduler.consumer.bufferDurationSec}")
   private Long bufferDurationSec;
 
   private final RabbitEndpointService rabbit;
@@ -69,9 +66,7 @@ public class SchedulerStreams {
   }
 
   private Disposable createSchedulerProducer() {
-    val routingKeys = "#";
-    return createTransProducerStream(
-            rabbit, producerTopicExchangeName, producerQueueName, routingKeys)
+    return createTransProducerStream(rabbit, producerTopicExchangeName)
         .send(sourceSink.source())
         .subscribe(
             tx -> {

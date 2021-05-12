@@ -31,24 +31,10 @@ import org.icgc.argo.workflow_management_scheduler.rabbitmq.schema.WfMgmtRunMsg;
 public class RabbitmqUtils {
 
   public static TransactionalProducerStream<WfMgmtRunMsg> createTransProducerStream(
-      RabbitEndpointService rabbit, String topicName, String queueName, String... routingKey) {
-    val dlxName = topicName + "-dlx";
-    val dlqName = queueName + "-dlq";
+      RabbitEndpointService rabbit, String topicName) {
     return rabbit
         .declareTopology(
-            topologyBuilder ->
-                topologyBuilder
-                    .declareExchange(dlxName)
-                    .and()
-                    .declareQueue(dlqName)
-                    .boundTo(dlxName)
-                    .and()
-                    .declareExchange(topicName)
-                    .type(ExchangeType.topic)
-                    .and()
-                    .declareQueue(queueName)
-                    .boundTo(topicName, routingKey)
-                    .withDeadLetterExchange(dlxName))
+            topologyBuilder -> topologyBuilder.declareExchange(topicName).type(ExchangeType.topic))
         .createTransactionalProducerStream(WfMgmtRunMsg.class)
         .route()
         .toExchange(topicName)
@@ -58,7 +44,7 @@ public class RabbitmqUtils {
 
   public static TransactionalConsumerStream<WfMgmtRunMsg> createTransConsumerStream(
       RabbitEndpointService rabbit, String topicName, String queueName, String... routingKey) {
-    val dlxName = topicName + "-dlx";
+    val dlxName = queueName + "-dlx";
     val dlqName = queueName + "-dlq";
     return rabbit
         .declareTopology(
