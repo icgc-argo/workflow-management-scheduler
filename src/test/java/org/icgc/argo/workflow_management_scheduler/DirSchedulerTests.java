@@ -113,13 +113,58 @@ public class DirSchedulerTests {
     assertThat(initializedRuns).hasSameElementsAs(expectedInitializedRuns);
   }
 
+  @Test
+  void tesTemplatingEngineDirParam() {
+    val allRuns =
+        ImmutableList.of(
+            createRun(
+                "run-2",
+                RunState.QUEUED,
+                ALIGN_WF_URL,
+                WORK_DIR_TEMPLATE + "/asdf/work",
+                WORK_DIR_TEMPLATE + "/asdf/project",
+                WORK_DIR_TEMPLATE + "/asdf/launch"),
+            createRun("run-3", RunState.QUEUED, WGS_SANGER_WF_URL, WORK_DIR_TEMPLATE));
+
+    val initializedRuns = dirScheduler.getNextInitializedRuns(allRuns);
+
+    // there is enough room to schedule an align in work_dir_1 and one more sanger in work_dir_0
+    val expectedInitializedRuns =
+        List.of(
+            createRun(
+                "run-2",
+                RunState.INITIALIZING,
+                ALIGN_WF_URL,
+                WORK_DIR_1 + "/asdf/work",
+                WORK_DIR_1 + "/asdf/project",
+                WORK_DIR_1 + "/asdf/launch"),
+            createRun("run-3", RunState.INITIALIZING, WGS_SANGER_WF_URL, WORK_DIR_0));
+
+    assertThat(initializedRuns).hasSameElementsAs(expectedInitializedRuns);
+  }
+
   Run createRun(String runId, RunState runState, String url, String workDir) {
+    return createRun(runId, runState, url, workDir, null, null);
+  }
+
+  Run createRun(
+      String runId,
+      RunState runState,
+      String url,
+      String workDir,
+      String projectDir,
+      String launchDir) {
     return Run.builder()
         .runId(runId)
         .state(runState)
         .workflowUrl(url)
         .workflowParamsJsonStr("{\"workDir\": \"" + workDir + "\"}")
-        .workflowEngineParams(Run.EngineParams.builder().workDir(workDir).build())
+        .workflowEngineParams(
+            Run.EngineParams.builder()
+                .workDir(workDir)
+                .projectDir(projectDir)
+                .launchDir(launchDir)
+                .build())
         .build();
   }
 }

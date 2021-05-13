@@ -111,8 +111,10 @@ public class DirScheduler {
                         nextRunToInit.getWorkflowParamsJsonStr(),
                         config.getWorkDirTemplate(),
                         value));
-                // set workdir
-                nextRunToInit.getWorkflowEngineParams().setWorkDir(value);
+                // set engine param dirs
+                nextRunToInit.transformEngineParamDirs(
+                    currValue ->
+                        replaceTemplateWithValue(currValue, config.getWorkDirTemplate(), value));
                 // set to INIT
                 nextRunToInit.setState(RunState.INITIALIZING);
 

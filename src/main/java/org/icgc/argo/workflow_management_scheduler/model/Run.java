@@ -1,6 +1,8 @@
 package org.icgc.argo.workflow_management_scheduler.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.Objects;
+import java.util.function.Function;
 import lombok.*;
 import org.icgc.argo.workflow_management_scheduler.rabbitmq.schema.RunState;
 
@@ -25,6 +27,18 @@ public class Run {
 
   public Boolean isNotQueued() {
     return !isQueued();
+  }
+
+  public void transformEngineParamDirs(Function<String, String> transformer) {
+    if (Objects.nonNull(workflowEngineParams.getWorkDir())) {
+      workflowEngineParams.setWorkDir(transformer.apply(workflowEngineParams.getWorkDir()));
+    }
+    if (Objects.nonNull(workflowEngineParams.getLaunchDir())) {
+      workflowEngineParams.setLaunchDir(transformer.apply(workflowEngineParams.getLaunchDir()));
+    }
+    if (Objects.nonNull(workflowEngineParams.getProjectDir())) {
+      workflowEngineParams.setProjectDir(transformer.apply(workflowEngineParams.getProjectDir()));
+    }
   }
 
   @Data
