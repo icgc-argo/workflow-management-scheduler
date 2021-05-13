@@ -38,7 +38,7 @@ public class DirScheduler {
         .filter(Run::isQueued)
         .forEach(
             run -> {
-              if (hasDirTemplate(run)) {
+              if (canBeTemplated(run)) {
                 runsWaitingForDir.add(run);
               } else {
                 run.setState(RunState.INITIALIZING);
@@ -124,11 +124,12 @@ public class DirScheduler {
     return initializedRuns;
   }
 
-  private Boolean hasDirTemplate(Run run) {
+  private Boolean canBeTemplated(Run run) {
     return run != null
         && run.getWorkflowEngineParams() != null
         && run.getWorkflowEngineParams().getWorkDir() != null
-        && run.getWorkflowEngineParams().getWorkDir().equals(config.getWorkDirTemplate());
+        && run.getWorkflowEngineParams().getWorkDir().startsWith(config.getWorkDirTemplate())
+        && config.getWorkflows().stream().anyMatch(wf -> wf.getUrl().equals(run.getWorkflowUrl()));
   }
 
   private String replaceTemplateWithValue(
