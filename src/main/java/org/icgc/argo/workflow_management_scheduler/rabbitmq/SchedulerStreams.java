@@ -11,6 +11,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
 import javax.annotation.PostConstruct;
+
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -56,8 +58,8 @@ public class SchedulerStreams {
 
   private final OnDemandSource<WfMgmtRunMsg> sourceSink = new OnDemandSource<>("sourceSink");
 
-  private Disposable schedulerProducer;
-  private Disposable schedulerConsumer;
+  @Getter private Disposable schedulerProducer;
+  @Getter private Disposable schedulerConsumer;
 
   @PostConstruct
   public void init() {
