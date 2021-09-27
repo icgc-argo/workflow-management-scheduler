@@ -16,9 +16,11 @@ import org.junit.jupiter.api.Test;
 public class DirSchedulerTests {
   private static final String ALIGN_NAME = "ALIGN";
   private static final String WGS_NAME = "WGS_NAME";
-  private static final String ALIGN_WF_URL = "http://ALIGN";
-  private static final String WGS_SANGER_WF_URL = "http://WGS_SANGER";
-  private static final String HELLO_WF_URL = "http://HELLO";
+  private static final String ALIGN_WF_REPO = "org/ALIGN";
+  private static final String ALIGN_WF_URL = "http://github.com/org/ALIGN";
+  private static final String WGS_SANGER_WF_REPO = "org/WGS_SANGER";
+  private static final String WGS_SANGER_WF_URL = "http://github.com/org/WGS_SANGER.git";
+  private static final String HELLO_WF_URL = "http://www.github.com/org/HELLO";
 
   private static final String WORK_DIR_TEMPLATE = "<SCHEDULED_DIR>";
   private static final String WORK_DIR_0 = "/nfs/dir-0";
@@ -31,8 +33,8 @@ public class DirSchedulerTests {
           MAX_COST_PER_DIR,
           ImmutableList.of(WORK_DIR_0, WORK_DIR_1),
           ImmutableList.of(
-              new WorkflowProps(ALIGN_NAME, ALIGN_WF_URL, 2, 2),
-              new WorkflowProps(WGS_NAME, WGS_SANGER_WF_URL, 4, 1)));
+              new WorkflowProps(ALIGN_NAME, ALIGN_WF_REPO, 2, 2),
+              new WorkflowProps(WGS_NAME, WGS_SANGER_WF_REPO, 4, 1)));
 
   private final DirScheduler dirScheduler = new DirScheduler(config);
 
@@ -46,7 +48,7 @@ public class DirSchedulerTests {
 
     val expectedRuns = List.of(createRun("run-2", RunState.INITIALIZING, ALIGN_WF_URL, WORK_DIR_1));
 
-    assertIterableEquals(initializedRuns, expectedRuns);
+    assertIterableEquals(expectedRuns, initializedRuns);
   }
 
   @Test
@@ -113,13 +115,18 @@ public class DirSchedulerTests {
     assertThat(initializedRuns).hasSameElementsAs(expectedInitializedRuns);
   }
 
-  Run createRun(String runId, RunState runState, String url, String workDir) {
+  Run createRun(String runId, RunState runState, String url, String baseDir) {
     return Run.builder()
         .runId(runId)
         .state(runState)
         .workflowUrl(url)
-        .workflowParamsJsonStr("{\"workDir\": \"" + workDir + "\"}")
-        .workflowEngineParams(Run.EngineParams.builder().workDir(workDir).build())
+        .workflowParamsJsonStr("{\"baseDir\": \"" + baseDir + "\"}")
+        .workflowEngineParams(
+            Run.EngineParams.builder()
+                .projectDir(baseDir + "/project/dir/path")
+                .launchDir(baseDir + "/launch/dir/path")
+                .workDir(baseDir + "/work/dir/path")
+                .build())
         .build();
   }
 }

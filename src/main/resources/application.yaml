@@ -30,11 +30,11 @@ scheduler:
     - "nfs-local/nfs-1"
     - "nfs-local/nfs-2"
   workflows:
-    - url: "https:///hello"
+    - repository: "argo/hello"
       name: "hello"
       maxTotalRuns: 2
       cost: 2
-    - url: "http://sanger-wgs"
+    - repository: "argo/sanger-wgs"
       name: "sanger-wgs"
       maxTotalRuns: 4
       cost: 1
