@@ -27,7 +27,7 @@ public class WesUtilsTests {
 
     URLS.forEach(
         url -> {
-          assertEquals(EXPECTED, extractRepositoryFromUrl(url));
+          assertEquals(EXPECTED, extractRepositoryFromUrl(url).orElse(""));
         });
   }
 }

@@ -3,6 +3,7 @@ package org.icgc.argo.workflow_management_scheduler.model;
 import static org.icgc.argo.workflow_management_scheduler.utils.WesUtils.extractRepositoryFromUrl;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.Optional;
 import lombok.*;
 import org.icgc.argo.workflow_management_scheduler.rabbitmq.schema.RunState;
 
@@ -36,7 +37,7 @@ public class Run {
             && workflowEngineParams.getProjectDir().startsWith(startsWithStr);
   }
 
-  public String getRepository() {
+  public Optional<String> getRepository() {
     return extractRepositoryFromUrl(this.getWorkflowUrl());
   }
 

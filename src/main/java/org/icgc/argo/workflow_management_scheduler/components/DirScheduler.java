@@ -2,7 +2,8 @@ package org.icgc.argo.workflow_management_scheduler.components;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.nCopies;
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toMap;
 
 import com.google.common.collect.ImmutableList;
 import java.util.*;
@@ -47,7 +48,8 @@ public class DirScheduler {
         };
     val runsBySchedulingType = allRuns.stream().collect(groupingBy(matchRunToSchedulingType));
 
-    val runsWaitingForDir = runsBySchedulingType.getOrDefault(RUN_WAITING_FOR_DIR, new ArrayList<>());
+    val runsWaitingForDir =
+        runsBySchedulingType.getOrDefault(RUN_WAITING_FOR_DIR, new ArrayList<>());
     val runReadyForInit = runsBySchedulingType.getOrDefault(RUN_READY_FOR_INIT, new ArrayList<>());
     val activeRuns = runsBySchedulingType.getOrDefault(ACTIVE_RUN, new ArrayList<>());
 
@@ -62,10 +64,8 @@ public class DirScheduler {
   }
 
   private List<Run> getNextScheduledRuns(List<Run> activeRuns, List<Run> queuedRuns) {
-    val wfNameToQueuedRuns =
-        queuedRuns.stream().collect(groupingBy(this::matchRunToKnownWorkflowName));
-    val wfNameToActiveRuns =
-        activeRuns.stream().collect(groupingBy(this::matchRunToKnownWorkflowName));
+    val wfNameToQueuedRuns = queuedRuns.stream().collect(groupingBy(this::knownWorkflowNameForRun));
+    val wfNameToActiveRuns = activeRuns.stream().collect(groupingBy(this::knownWorkflowNameForRun));
 
     val dirValueToActiveRuns =
         activeRuns.stream().collect(groupingBy(this::matchRunToKnownDirValues));
@@ -141,15 +141,21 @@ public class DirScheduler {
     return run != null
         && run.getWorkflowEngineParams() != null
         && run.isAnyDirParamMatched(config.getWorkDirTemplate())
-        && !matchRunToKnownWorkflowName(run).isEmpty();
+        && matchRunToKnownWorkflowName(run).isPresent();
   }
 
-  private String matchRunToKnownWorkflowName(Run run) {
-    return config.getWorkflows().stream()
-        .filter(wf -> wf.getRepository().equals(run.getRepository()))
-        .map(WorkflowProps::getName)
-        .findFirst()
-        .orElse("");
+  private Optional<String> matchRunToKnownWorkflowName(Run run) {
+    return run.getRepository()
+        .flatMap(
+            repo ->
+                config.getWorkflows().stream()
+                    .filter(wf -> wf.getRepository().equals(repo))
+                    .map(WorkflowProps::getName)
+                    .findFirst());
+  }
+
+  private String knownWorkflowNameForRun(Run run) {
+    return matchRunToKnownWorkflowName(run).orElse("");
   }
 
   private String matchRunToKnownDirValues(Run run) {
@@ -174,7 +180,7 @@ public class DirScheduler {
 
               val costInDir =
                   runsInDir.stream()
-                      .map(this::matchRunToKnownWorkflowName)
+                      .map(this::knownWorkflowNameForRun)
                       .map(wfName -> workflowNameToCosts.getOrDefault(wfName, 0))
                       .reduce(0, Integer::sum);
 
