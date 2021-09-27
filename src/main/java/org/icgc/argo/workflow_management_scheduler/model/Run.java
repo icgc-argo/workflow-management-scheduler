@@ -1,5 +1,7 @@
 package org.icgc.argo.workflow_management_scheduler.model;
 
+import static org.icgc.argo.workflow_management_scheduler.utils.WesUtils.extractRepositoryFromUrl;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import org.icgc.argo.workflow_management_scheduler.rabbitmq.schema.RunState;
@@ -19,12 +21,23 @@ public class Run {
   private EngineParams workflowEngineParams;
   private Long timestamp;
 
-  public Boolean isQueued() {
-    return state.equals(RunState.QUEUED);
+  public Boolean isActive() {
+    return state.equals(RunState.INITIALIZING)
+        || state.equals(RunState.RUNNING)
+        || state.equals(RunState.CANCELING);
   }
 
-  public Boolean isNotQueued() {
-    return !isQueued();
+  public Boolean isAnyDirParamMatched(@NonNull String startsWithStr) {
+    return workflowEngineParams.getWorkDir() != null
+            && workflowEngineParams.getWorkDir().startsWith(startsWithStr)
+        || workflowEngineParams.getLaunchDir() != null
+            && workflowEngineParams.getLaunchDir().startsWith(startsWithStr)
+        || workflowEngineParams.getProjectDir() != null
+            && workflowEngineParams.getProjectDir().startsWith(startsWithStr);
+  }
+
+  public String getRepository() {
+    return extractRepositoryFromUrl(this.getWorkflowUrl());
   }
 
   @Data

@@ -46,7 +46,7 @@ public class DirSchedulerTests {
 
     val expectedRuns = List.of(createRun("run-2", RunState.INITIALIZING, ALIGN_WF_URL, WORK_DIR_1));
 
-    assertIterableEquals(initializedRuns, expectedRuns);
+    assertIterableEquals(expectedRuns, initializedRuns);
   }
 
   @Test
@@ -113,13 +113,18 @@ public class DirSchedulerTests {
     assertThat(initializedRuns).hasSameElementsAs(expectedInitializedRuns);
   }
 
-  Run createRun(String runId, RunState runState, String url, String workDir) {
+  Run createRun(String runId, RunState runState, String url, String baseDir) {
     return Run.builder()
         .runId(runId)
         .state(runState)
         .workflowUrl(url)
-        .workflowParamsJsonStr("{\"workDir\": \"" + workDir + "\"}")
-        .workflowEngineParams(Run.EngineParams.builder().workDir(workDir).build())
+        .workflowParamsJsonStr("{\"baseDir\": \"" + baseDir + "\"}")
+        .workflowEngineParams(
+            Run.EngineParams.builder()
+                .projectDir(baseDir + "/project/dir/path")
+                .launchDir(baseDir + "/launch/dir/path")
+                .workDir(baseDir + "/work/dir/path")
+                .build())
         .build();
   }
 }

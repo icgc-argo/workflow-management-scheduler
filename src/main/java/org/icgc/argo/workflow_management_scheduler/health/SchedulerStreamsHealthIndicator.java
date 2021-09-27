@@ -12,18 +12,19 @@ import reactor.core.publisher.Mono;
 @Component
 @RequiredArgsConstructor
 public class SchedulerStreamsHealthIndicator implements ReactiveHealthIndicator {
-    private final SchedulerStreams schedulerStreams;
+  private final SchedulerStreams schedulerStreams;
 
-    @Override
-    public Mono<Health> health() {
-        val healthBuilder = Health.up()
-                .withDetail("schedulerConsumer", schedulerStreams.getSchedulerConsumer().isDisposed())
-                .withDetail("schedulerProducer", schedulerStreams.getSchedulerConsumer().isDisposed());
+  @Override
+  public Mono<Health> health() {
+    val healthBuilder =
+        Health.up()
+            .withDetail("schedulerConsumer", schedulerStreams.getSchedulerConsumer().isDisposed())
+            .withDetail("schedulerProducer", schedulerStreams.getSchedulerConsumer().isDisposed());
 
-        if (schedulerStreams.getSchedulerConsumer().isDisposed()
-                    || schedulerStreams.getSchedulerProducer().isDisposed()) {
-            healthBuilder.status(Status.DOWN);
-        }
-        return Mono.just(healthBuilder.build());
+    if (schedulerStreams.getSchedulerConsumer().isDisposed()
+        || schedulerStreams.getSchedulerProducer().isDisposed()) {
+      healthBuilder.status(Status.DOWN);
     }
+    return Mono.just(healthBuilder.build());
+  }
 }
