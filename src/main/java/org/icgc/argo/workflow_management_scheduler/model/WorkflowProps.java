@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class WorkflowProps {
   String name;
-  String url;
+  String repository;
   Integer maxTotalRuns;
   Integer cost;
 }
