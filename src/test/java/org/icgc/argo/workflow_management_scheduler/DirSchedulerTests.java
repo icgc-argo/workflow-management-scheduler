@@ -115,6 +115,33 @@ public class DirSchedulerTests {
     assertThat(initializedRuns).hasSameElementsAs(expectedInitializedRuns);
   }
 
+  @Test
+  void testSchedulingWhenActiveRunsHaveUnknownDirsAndRepos() {
+    val allRuns =
+        ImmutableList.of(
+            createRun(
+                "run-unknown", RunState.RUNNING, "https://github.com/unknown/repo.git", WORK_DIR_1),
+            createRun("run-other-sanger", RunState.RUNNING, WGS_SANGER_WF_URL, "/test"),
+            createRun("run-1", RunState.QUEUED, WGS_SANGER_WF_URL, WORK_DIR_TEMPLATE),
+            createRun("run-2", RunState.QUEUED, WGS_SANGER_WF_URL, WORK_DIR_TEMPLATE),
+            createRun("run-3", RunState.QUEUED, WGS_SANGER_WF_URL, WORK_DIR_TEMPLATE),
+            createRun("run-4", RunState.QUEUED, WGS_SANGER_WF_URL, WORK_DIR_TEMPLATE));
+
+    val initializedRuns = dirScheduler.getNextInitializedRuns(allRuns);
+
+    // `run-other-sanger` is a wgs_sanger and these workflows are config with max limit of 4
+    // which means only 3 new runs should be init.
+    // `run-other-unknown` is using WORK_DIR_1 but its not configured so no cost can be associated
+    // which is why its is ignored in scheduling
+    val expectedInitializedRuns =
+        List.of(
+            createRun("run-2", RunState.INITIALIZING, WGS_SANGER_WF_URL, WORK_DIR_0),
+            createRun("run-3", RunState.INITIALIZING, WGS_SANGER_WF_URL, WORK_DIR_1),
+            createRun("run-4", RunState.INITIALIZING, WGS_SANGER_WF_URL, WORK_DIR_1));
+
+    assertThat(initializedRuns).hasSameElementsAs(expectedInitializedRuns);
+  }
+
   Run createRun(String runId, RunState runState, String url, String baseDir) {
     return Run.builder()
         .runId(runId)
