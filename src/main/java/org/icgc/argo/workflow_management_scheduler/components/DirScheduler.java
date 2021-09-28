@@ -2,11 +2,15 @@ package org.icgc.argo.workflow_management_scheduler.components;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.nCopies;
+import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
 
 import com.google.common.collect.ImmutableList;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
@@ -67,15 +71,18 @@ public class DirScheduler {
     val wfNameToQueuedRuns = queuedRuns.stream().collect(groupingBy(this::knownWorkflowNameForRun));
     val wfNameToActiveRuns = activeRuns.stream().collect(groupingBy(this::knownWorkflowNameForRun));
 
-    val dirValueToActiveRuns =
-        activeRuns.stream().collect(groupingBy(this::matchRunToKnownDirValues));
+    // map of dirValues (representing knapsacks) with array of runs (representing knapsack items)
+    val dirValueToRuns =
+        config.getDirValues().stream().collect(toMap(identity(), dir -> new ArrayList<Run>()));
 
-    // map representing all runs on scheduler dirs
-    val dirValueToRuns = new HashMap<>(dirValueToActiveRuns);
-    // make sure all dir values are present
-    config
-        .getDirValues()
-        .forEach(dir -> dirValueToRuns.computeIfAbsent(dir, k -> new ArrayList<>()));
+    // add all active runs that map to dirValues to get current state of dirs
+    activeRuns.forEach(
+        run -> {
+          val dirValue = matchRunToKnownDirValues(run);
+          if (dirValueToRuns.containsKey(dirValue)) {
+            dirValueToRuns.get(dirValue).add(run);
+          }
+        });
 
     // collect next scheduled runs
     List<Run> scheduledRuns = new ArrayList<>();
@@ -171,7 +178,7 @@ public class DirScheduler {
   }
 
   private Stream<String> getStreamOfNextSchedulableDirs(
-      Map<String, List<Run>> workDirToRunsMap, Integer cost, Integer maxWorkDirsRequested) {
+      Map<String, ArrayList<Run>> workDirToRunsMap, Integer cost, Integer maxWorkDirsRequested) {
     return workDirToRunsMap.entrySet().stream()
         .flatMap(
             entry -> {
