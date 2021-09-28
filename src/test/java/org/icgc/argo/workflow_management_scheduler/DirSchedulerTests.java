@@ -116,7 +116,7 @@ public class DirSchedulerTests {
   }
 
   @Test
-  void testSchedulingWithActiveRunsWithUnknownDirs() {
+  void testSchedulingWhenActiveRunsHaveUnknownDirsAndRepos() {
     val allRuns =
         ImmutableList.of(
             createRun(

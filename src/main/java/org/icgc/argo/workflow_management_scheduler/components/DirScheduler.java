@@ -68,7 +68,6 @@ public class DirScheduler {
   }
 
   private List<Run> getNextScheduledRuns(List<Run> activeRuns, List<Run> queuedRuns) {
-
     val wfNameToQueuedRuns = queuedRuns.stream().collect(groupingBy(this::knownWorkflowNameForRun));
     val wfNameToActiveRuns = activeRuns.stream().collect(groupingBy(this::knownWorkflowNameForRun));
 
