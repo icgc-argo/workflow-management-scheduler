@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.2.2.RELEASE</version>
+		<version>2.6.6</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>org.icgc.argo</groupId>
@@ -16,6 +16,7 @@
 	<properties>
 		<java.version>11</java.version>
 		<guava.version>29.0-jre</guava.version>
+		<reactor-rabbitmq-streams.version>0.0.9</reactor-rabbitmq-streams.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -56,7 +57,7 @@
 			<dependency>
 				<groupId>com.pivotal.rabbitmq</groupId>
 				<artifactId>reactor-rabbitmq-streams</artifactId>
-				<version>0.0.7</version>
+				<version>${reactor-rabbitmq-streams.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
