@@ -13,8 +13,8 @@ rabbit:
     standalone:
       host: localhost
       port: 5672
-      username: user
-      password: pass
+      username: uklocal
+      password: uklocal
 
 scheduler.consumer:
   queue: "scheduler-queue"
@@ -38,3 +38,10 @@ scheduler:
       name: "sanger-wgs"
       maxTotalRuns: 4
       cost: 1
+
+logging:
+  level:
+    org:
+      icgc:
+        argo:
+          workflow_management_scheduler: DEBUG

@@ -5,6 +5,9 @@ import static org.icgc.argo.workflow_management_scheduler.model.GqlResult.EMPTY_
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.icgc.argo.workflow_management_scheduler.model.GqlResult;
 import org.icgc.argo.workflow_management_scheduler.model.Run;
@@ -12,6 +15,7 @@ import org.icgc.argo.workflow_management_scheduler.model.SimpleQuery;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ObjectUtils;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -19,6 +23,7 @@ import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
 @Component
+@Slf4j
 public class GatekeeperClient {
   private static final Integer DEFAULT_PAGE_SIZE = 100;
 
@@ -55,8 +60,12 @@ public class GatekeeperClient {
         .contentType(MediaType.APPLICATION_JSON)
         .body(BodyInserters.fromValue(new SimpleQuery(createQuery(page), Map.of())))
         .retrieve()
-        .bodyToMono(GqlResult.class)
-        .map(
+        //.bodyToMono(GqlResult.class)
+        .bodyToMono((String.class)).map(strResult -> {
+          System.out.println("gql response: "+ strResult);
+          return  Tuples.of(page, null);
+        });
+        /*.map(
             gqlResult -> {
               val searchResult =
                   gqlResult != null
@@ -65,8 +74,15 @@ public class GatekeeperClient {
                       ? gqlResult.getData().getRuns()
                       : EMPTY_SEARCH_RESULT;
 
+              log.debug("gqlResult:content {}",searchResult.getContent());
+              log.debug("gqlResult:info {}",searchResult.getInfo());
+              //Temp code. TO BE REVERTED
+              if(Objects.isNull(searchResult.getContent())){
+                searchResult.setContent(new ArrayList<Run>());
+              }
+
               return Tuples.of(page, searchResult);
-            });
+            });*/
   }
 
   private static String createQuery(Integer from) {
