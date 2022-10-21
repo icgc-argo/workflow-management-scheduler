@@ -13,8 +13,8 @@ rabbit:
     standalone:
       host: localhost
       port: 5672
-      username: uklocal
-      password: uklocal
+      username: user
+      password: pass
 
 scheduler.consumer:
   queue: "scheduler-queue"
