@@ -60,12 +60,8 @@ public class GatekeeperClient {
         .contentType(MediaType.APPLICATION_JSON)
         .body(BodyInserters.fromValue(new SimpleQuery(createQuery(page), Map.of())))
         .retrieve()
-        //.bodyToMono(GqlResult.class)
-        .bodyToMono((String.class)).map(strResult -> {
-          System.out.println("gql response: "+ strResult);
-          return  Tuples.of(page, null);
-        });
-        /*.map(
+        .bodyToMono(GqlResult.class)
+        .map(
             gqlResult -> {
               val searchResult =
                   gqlResult != null
@@ -76,13 +72,8 @@ public class GatekeeperClient {
 
               log.debug("gqlResult:content {}",searchResult.getContent());
               log.debug("gqlResult:info {}",searchResult.getInfo());
-              //Temp code. TO BE REVERTED
-              if(Objects.isNull(searchResult.getContent())){
-                searchResult.setContent(new ArrayList<Run>());
-              }
-
               return Tuples.of(page, searchResult);
-            });*/
+            });
   }
 
   private static String createQuery(Integer from) {
