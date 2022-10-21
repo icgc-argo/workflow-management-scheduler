@@ -36,6 +36,7 @@ public class DirScheduler {
   }
 
   public ImmutableList<Run> getNextInitializedRuns(ImmutableList<Run> allRuns) {
+    log.debug("allRuns: {}", allRuns);
     val RUN_WAITING_FOR_DIR = "RUN_WAITING_FOR_DIR";
     val ACTIVE_RUN = "ACTIVE_RUN";
     val RUN_READY_FOR_INIT = "RUN_READY_FOR_INIT";
@@ -51,12 +52,12 @@ public class DirScheduler {
           }
         };
     val runsBySchedulingType = allRuns.stream().collect(groupingBy(matchRunToSchedulingType));
-
+    log.debug("runsBySchedulingType: {}",runsBySchedulingType);
     val runsWaitingForDir =
         runsBySchedulingType.getOrDefault(RUN_WAITING_FOR_DIR, new ArrayList<>());
     val runReadyForInit = runsBySchedulingType.getOrDefault(RUN_READY_FOR_INIT, new ArrayList<>());
     val activeRuns = runsBySchedulingType.getOrDefault(ACTIVE_RUN, new ArrayList<>());
-
+  log.debug("runsWaitingForDir: {}",runsWaitingForDir);
     if (!runsWaitingForDir.isEmpty()) {
       val scheduledRuns = getNextScheduledRuns(activeRuns, runsWaitingForDir);
       runReadyForInit.addAll(scheduledRuns);
@@ -68,6 +69,7 @@ public class DirScheduler {
   }
 
   private List<Run> getNextScheduledRuns(List<Run> activeRuns, List<Run> queuedRuns) {
+    log.debug("getNextScheduledRuns called");
     val wfNameToQueuedRuns = queuedRuns.stream().collect(groupingBy(this::knownWorkflowNameForRun));
     val wfNameToActiveRuns = activeRuns.stream().collect(groupingBy(this::knownWorkflowNameForRun));
 
@@ -109,12 +111,14 @@ public class DirScheduler {
               allocatedWorkDirValues.forEach(
                   value -> {
                     val nextRunToInit = queuedRunsForWf.remove(queuedRunsForWf.size() - 1);
+                    log.debug("nextRunToInit: {}",nextRunToInit);
                     // update template params
                     val templatedJson =
                         replaceTemplateWithValue(
                             nextRunToInit.getWorkflowParamsJsonStr(),
                             config.getWorkDirTemplate(),
                             value);
+                    log.debug("templatedJson: {}",templatedJson);
                     nextRunToInit.setWorkflowParamsJsonStr(templatedJson);
                     // set dirs
                     val newWorkDir =
@@ -122,16 +126,19 @@ public class DirScheduler {
                             nextRunToInit.getWorkflowEngineParams().getWorkDir(),
                             config.getWorkDirTemplate(),
                             value);
+                    log.debug("newWorkDir: {}",newWorkDir);
                     val newProjectDir =
                         replaceTemplateWithValue(
                             nextRunToInit.getWorkflowEngineParams().getProjectDir(),
                             config.getWorkDirTemplate(),
                             value);
+                    log.debug("newProjectDir: {}",newProjectDir);
                     val newLaunchDir =
                         replaceTemplateWithValue(
                             nextRunToInit.getWorkflowEngineParams().getLaunchDir(),
                             config.getWorkDirTemplate(),
                             value);
+                    log.debug("newLaunchDir: {}",newLaunchDir);
                     nextRunToInit.getWorkflowEngineParams().setWorkDir(newWorkDir);
                     nextRunToInit.getWorkflowEngineParams().setProjectDir(newProjectDir);
                     nextRunToInit.getWorkflowEngineParams().setLaunchDir(newLaunchDir);
@@ -171,6 +178,7 @@ public class DirScheduler {
 
   private String replaceTemplateWithValue(
       String input, String templateRegex, String templateValue) {
+    log.debug("input, templateRegex, templateValue {} - {} - {}",input, templateRegex, templateValue);
     if (input != null && input.contains(templateRegex)) {
       return input.replaceAll(templateRegex, templateValue);
     }
@@ -196,6 +204,7 @@ public class DirScheduler {
                 val numOfRunsForWfNameToFitInAvailableCost = availableCost / cost;
                 return nCopies(numOfRunsForWfNameToFitInAvailableCost, dirValue).stream();
               }
+              log.debug("availableCost < cost");
               return Stream.empty();
             })
         .limit(maxWorkDirsRequested);
