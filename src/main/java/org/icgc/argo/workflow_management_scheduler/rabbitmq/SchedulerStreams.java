@@ -127,7 +127,7 @@ public class SchedulerStreams {
         .subscribe(Transaction::commit);
   }
 
-  protected void triggerScheduler() {
+  public void initializeRuns() {
     fetchAllGatekeeperRunsAndCreateNextInitRunsMsgs()
             .doOnNext(sourceSink::send)
             .subscribe();
