@@ -127,6 +127,12 @@ public class SchedulerStreams {
         .subscribe(Transaction::commit);
   }
 
+  public void initializeRuns() {
+    fetchAllGatekeeperRunsAndCreateNextInitRunsMsgs()
+            .doOnNext(sourceSink::send)
+            .subscribe();
+  }
+
   private Flux<WfMgmtRunMsg> fetchAllGatekeeperRunsAndCreateNextInitRunsMsgs() {
     return gatekeeperClient
         .getAllRuns()
