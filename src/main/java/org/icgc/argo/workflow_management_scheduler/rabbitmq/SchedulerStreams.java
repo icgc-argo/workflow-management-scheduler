@@ -64,8 +64,18 @@ public class SchedulerStreams {
   public void init() {
     this.schedulerProducer = createSchedulerProducer();
     this.schedulerConsumer = createSchedulerConsumer();
+
+    // on startup fetch all runs and send then to producer
+    log.info("Triggering scheduleOn: START_UP");
+    fetchAllGatekeeperRunsAndCreateNextInitRunsMsgs().doOnNext(sourceSink::send).blockLast();
   }
 
+  /**
+   * This function creates a disposable which is the schedulers transactional producer.The producer
+   * sends messages from the sourceSink out the configured exchange.
+   *
+   * @return schedulerProducer disposable
+   */
   private Disposable createSchedulerProducer() {
     return createTransProducerStream(rabbit, producerTopicExchangeName)
         .send(sourceSink.source())
@@ -76,6 +86,13 @@ public class SchedulerStreams {
             });
   }
 
+  /**
+   * This function creates a disposable which is the schedulers transactional consumer. The consumer
+   * gets messages from the configured queue then calls fetches all runs and schedules the next
+   * batch of runs.
+   *
+   * @return schedulerConsumer disposable
+   */
   private Disposable createSchedulerConsumer() {
     val routingKeys = ACTION_ON_STATES.stream().map(RunState::toString).toArray(String[]::new);
     return createTransConsumerStream(
@@ -104,14 +121,24 @@ public class SchedulerStreams {
         // Ask dir scheduler to schedule next batch of runs and stream them to the sourceSink
         .flatMap(
             tx ->
-                gatekeeperClient
-                    .getAllRuns()
-                    .map(runs -> dirScheduler.getNextInitializedRuns(ImmutableList.copyOf(runs)))
-                    .flatMapMany(Flux::fromIterable)
-                    .map(this::toWfMgmtRunMsg)
+                fetchAllGatekeeperRunsAndCreateNextInitRunsMsgs()
                     .doOnNext(sourceSink::send)
                     .then(Mono.just(tx)))
         .subscribe(Transaction::commit);
+  }
+
+  public void initializeRuns() {
+    fetchAllGatekeeperRunsAndCreateNextInitRunsMsgs()
+            .doOnNext(sourceSink::send)
+            .subscribe();
+  }
+
+  private Flux<WfMgmtRunMsg> fetchAllGatekeeperRunsAndCreateNextInitRunsMsgs() {
+    return gatekeeperClient
+        .getAllRuns()
+        .map(runs -> dirScheduler.getNextInitializedRuns(ImmutableList.copyOf(runs)))
+        .flatMapMany(Flux::fromIterable)
+        .map(this::toWfMgmtRunMsg);
   }
 
   private WfMgmtRunMsg toWfMgmtRunMsg(Run run) {
