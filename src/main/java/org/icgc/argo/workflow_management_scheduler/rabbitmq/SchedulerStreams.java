@@ -21,6 +21,7 @@ import org.icgc.argo.workflow_management_scheduler.model.Run;
 import org.icgc.argo.workflow_management_scheduler.rabbitmq.schema.EngineParams;
 import org.icgc.argo.workflow_management_scheduler.rabbitmq.schema.RunState;
 import org.icgc.argo.workflow_management_scheduler.rabbitmq.schema.WfMgmtRunMsg;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import reactor.core.Disposable;
@@ -163,4 +164,9 @@ public class SchedulerStreams {
         .setTimestamp(Instant.now().toEpochMilli())
         .build();
   }
+
+    @RabbitListener(queues = "trigger-queue")
+    public void consumeMessageFromQueue(String status) {
+      initializeRuns();
+    }
 }
