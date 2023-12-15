@@ -64,27 +64,6 @@ public class RabbitmqUtils {
         .createTransactionalConsumerStream(queueName, WfMgmtRunMsg.class);
   }
 
-  public static TransactionalConsumerStream<String> createTriggerConsumerStream(
-      RabbitEndpointService rabbit, String topicName, String queueName, String... routingKey) {
-    val dlxName = queueName + "-dlx";
-    val dlqName = queueName + "-dlq";
-    return rabbit
-        .declareTopology(
-            topologyBuilder ->
-                topologyBuilder
-                    .declareExchange(dlxName)
-                    .and()
-                    .declareQueue(dlqName)
-                    .boundTo(dlxName)
-                    .and()
-                    .declareExchange(topicName)
-                    .type(ExchangeType.topic)
-                    .and()
-                    .declareQueue(queueName)
-                    .boundTo(topicName, routingKey)
-                    .withDeadLetterExchange(dlxName))
-        .createTransactionalConsumerStream(queueName, String.class);
-  }
 
   Function<WfMgmtRunMsg, String> routingKeySelector() {
     return msg -> msg.getState().toString();

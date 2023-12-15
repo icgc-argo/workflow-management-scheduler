@@ -18,9 +18,7 @@ rabbit:
 
 scheduler.consumer:
   queue: "scheduler-queue"
-  triggerQueue: "trigger-queue"
   topicExchange: "gatekeeper-out"
-  triggerRoutingKey: "trigger-routingKey"
   bufferDurationSec: 10
 scheduler.producer:
   topicExchange: "gatekeeper-in"
