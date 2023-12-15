@@ -69,9 +69,6 @@ public class GatekeeperClient {
                           && gqlResult.getData().getRuns() != null
                       ? gqlResult.getData().getRuns()
                       : EMPTY_SEARCH_RESULT;
-
-              log.debug("gqlResult:content {}",searchResult.getContent());
-              log.debug("gqlResult:info {}",searchResult.getInfo());
               return Tuples.of(page, searchResult);
             });
   }
