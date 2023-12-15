@@ -49,13 +49,6 @@ public class SchedulerStreams {
 
   @Value("${scheduler.consumer.bufferDurationSec}")
   private Long bufferDurationSec;
-
-  @Value("${scheduler.consumer.triggerQueue}")
-  private String consumerTriggerQueueName;
-
-  @Value("${scheduler.consumer.triggerRoutingKey}")
-  private String consumerTriggerRoutingKey;
-
   private final RabbitEndpointService rabbit;
   private final GatekeeperClient gatekeeperClient;
   private final DirScheduler dirScheduler;
@@ -64,13 +57,11 @@ public class SchedulerStreams {
 
   @Getter private Disposable schedulerProducer;
   @Getter private Disposable schedulerConsumer;
-  @Getter private Disposable triggerConsumer;
 
   @PostConstruct
   public void init() {
     this.schedulerProducer = createSchedulerProducer();
     this.schedulerConsumer = createSchedulerConsumer();
-    this.triggerConsumer = createTriggerSchedulerConsumer();
 
     // on startup fetch all runs and send then to producer
     log.info("Triggering scheduleOn: START_UP");
@@ -134,22 +125,6 @@ public class SchedulerStreams {
         .subscribe(Transaction::commit);
   }
 
-  private Disposable createTriggerSchedulerConsumer() {
-    return createTriggerConsumerStream(
-            rabbit, consumerTopicExchangeName, consumerTriggerQueueName, consumerTriggerRoutingKey)
-        .receive()
-        .doOnNext(tx -> log.info("Received: " + tx.get()))
-        .map(e -> initializeRuns())
-        .subscribe();
-  }
-
-  public String initializeRuns() {
-    fetchAllGatekeeperRunsAndCreateNextInitRunsMsgs()
-        .doOnNext(sourceSink::send)
-        .map(e -> "Runs initialized")
-        .subscribe();
-    return "Runs initialized";
-  }
 
   private Flux<WfMgmtRunMsg> fetchAllGatekeeperRunsAndCreateNextInitRunsMsgs() {
     return gatekeeperClient
