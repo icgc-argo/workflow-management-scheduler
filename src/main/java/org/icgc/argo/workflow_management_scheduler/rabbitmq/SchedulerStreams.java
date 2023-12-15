@@ -1,7 +1,6 @@
 package org.icgc.argo.workflow_management_scheduler.rabbitmq;
 
-import static org.icgc.argo.workflow_management_scheduler.utils.RabbitmqUtils.createTransConsumerStream;
-import static org.icgc.argo.workflow_management_scheduler.utils.RabbitmqUtils.createTransProducerStream;
+import static org.icgc.argo.workflow_management_scheduler.utils.RabbitmqUtils.*;
 
 import com.google.common.collect.ImmutableList;
 import com.pivotal.rabbitmq.RabbitEndpointService;
@@ -50,7 +49,6 @@ public class SchedulerStreams {
 
   @Value("${scheduler.consumer.bufferDurationSec}")
   private Long bufferDurationSec;
-
   private final RabbitEndpointService rabbit;
   private final GatekeeperClient gatekeeperClient;
   private final DirScheduler dirScheduler;
@@ -127,11 +125,6 @@ public class SchedulerStreams {
         .subscribe(Transaction::commit);
   }
 
-  public void initializeRuns() {
-    fetchAllGatekeeperRunsAndCreateNextInitRunsMsgs()
-            .doOnNext(sourceSink::send)
-            .subscribe();
-  }
 
   private Flux<WfMgmtRunMsg> fetchAllGatekeeperRunsAndCreateNextInitRunsMsgs() {
     return gatekeeperClient

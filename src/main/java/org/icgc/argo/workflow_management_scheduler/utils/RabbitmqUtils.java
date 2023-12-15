@@ -64,6 +64,7 @@ public class RabbitmqUtils {
         .createTransactionalConsumerStream(queueName, WfMgmtRunMsg.class);
   }
 
+
   Function<WfMgmtRunMsg, String> routingKeySelector() {
     return msg -> msg.getState().toString();
   }
