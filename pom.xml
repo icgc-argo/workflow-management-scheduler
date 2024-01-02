@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>org.icgc.argo</groupId>
 	<artifactId>workflow-management-scheduler</artifactId>
-	<version>1.5.1-SNAPSHOT</version>
+	<version>1.5.0-SNAPSHOT</version>
 	<name>workflow-management-scheduler</name>
 	<description>Middleware for icgcargo/workflow-management</description>
 	<properties>
