@@ -110,28 +110,31 @@ public class DirScheduler {
                   value -> {
                     val nextRunToInit = queuedRunsForWf.remove(queuedRunsForWf.size() - 1);
                     // update template params
-                    val templatedJson =
+                    val preTemplatedJson =
                         replaceTemplateWithValue(
                             nextRunToInit.getWorkflowParamsJsonStr(),
                             config.getWorkDirTemplate(),
-                            value);
+                            value.split(":")[0]);
+
+                    val templatedJson = addClusterParam(preTemplatedJson, value.split(":")[1]);
+
                     nextRunToInit.setWorkflowParamsJsonStr(templatedJson);
                     // set dirs
                     val newWorkDir =
                         replaceTemplateWithValue(
                             nextRunToInit.getWorkflowEngineParams().getWorkDir(),
                             config.getWorkDirTemplate(),
-                            value);
+                            value.split(":")[0]);
                     val newProjectDir =
                         replaceTemplateWithValue(
                             nextRunToInit.getWorkflowEngineParams().getProjectDir(),
                             config.getWorkDirTemplate(),
-                            value);
+                            value.split(":")[0]);
                     val newLaunchDir =
                         replaceTemplateWithValue(
                             nextRunToInit.getWorkflowEngineParams().getLaunchDir(),
                             config.getWorkDirTemplate(),
-                            value);
+                            value.split(":")[0]);
                     nextRunToInit.getWorkflowEngineParams().setWorkDir(newWorkDir);
                     nextRunToInit.getWorkflowEngineParams().setProjectDir(newProjectDir);
                     nextRunToInit.getWorkflowEngineParams().setLaunchDir(newLaunchDir);
@@ -174,6 +177,16 @@ public class DirScheduler {
     log.debug("input, templateRegex, templateValue {} - {} - {}",input, templateRegex, templateValue);
     if (input != null && input.contains(templateRegex)) {
       return input.replaceAll(templateRegex, templateValue);
+    }
+    return input;
+  }
+
+  private String addClusterParam(String input, String templateValue) {
+    if (input != null) {
+      StringBuilder builder = new StringBuilder(input);
+      builder.setCharAt(input.lastIndexOf("}"),',');
+      builder.append("\"cluster\"").append(":\"").append(templateValue).append("\"}");
+      return new String(builder);
     }
     return input;
   }
