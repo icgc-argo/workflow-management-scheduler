@@ -5,6 +5,7 @@ import static java.util.Collections.nCopies;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
+import static org.icgc.argo.workflow_management_scheduler.utils.DirectoryUtils.*;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
@@ -12,8 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -28,7 +27,7 @@ import org.springframework.stereotype.Component;
 public class DirScheduler {
   private final DirSchedulerConfig config;
   private final Map<String, Integer> workflowNameToCosts;
-  private final String DIRECTORY_CLUSTER_DELIMITER = ":";
+
 
   public DirScheduler(DirSchedulerConfig config) {
     this.config = config;
@@ -194,21 +193,6 @@ public class DirScheduler {
       return new String(builder);
     }
     return input;
-  }
-
-  private String getDirectory(String dirValue){
-    return dirValue.split(DIRECTORY_CLUSTER_DELIMITER)[0];
-  }
-
-  private String getCluster(String dirValue){
-    return dirValue.split(DIRECTORY_CLUSTER_DELIMITER)[1];
-  }
-
-  public static void checkDirectoryClusterPattern(String strToCheck, String message){
-    Matcher matcher = Pattern.compile(".*:.*").matcher(strToCheck);
-    if(!matcher.matches()){
-      throw new RuntimeException(message);
-    }
   }
 
   private Stream<String> getStreamOfNextSchedulableDirs(
