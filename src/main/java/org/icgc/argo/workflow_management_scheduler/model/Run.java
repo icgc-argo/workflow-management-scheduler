@@ -30,11 +30,11 @@ public class Run {
 
   public Boolean isAnyDirParamMatched(@NonNull String startsWithStr) {
     return (workflowEngineParams.getWorkDir() != null
-            && workflowEngineParams.getWorkDir().startsWith(startsWithStr.split(":")[0]))
+            && workflowEngineParams.getWorkDir().startsWith(startsWithStr))
         || (workflowEngineParams.getLaunchDir() != null
-            && workflowEngineParams.getLaunchDir().startsWith(startsWithStr.split(":")[0]))
+            && workflowEngineParams.getLaunchDir().startsWith(startsWithStr))
         || (workflowEngineParams.getProjectDir() != null
-            && workflowEngineParams.getProjectDir().startsWith(startsWithStr.split(":")[0]));
+            && workflowEngineParams.getProjectDir().startsWith(startsWithStr));
   }
 
   public Optional<String> getRepository() {

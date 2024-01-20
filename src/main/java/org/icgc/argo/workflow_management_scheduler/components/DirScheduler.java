@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -26,6 +28,7 @@ import org.springframework.stereotype.Component;
 public class DirScheduler {
   private final DirSchedulerConfig config;
   private final Map<String, Integer> workflowNameToCosts;
+  private final String DIRECTORY_CLUSTER_DELIMITER = ":";
 
   public DirScheduler(DirSchedulerConfig config) {
     this.config = config;
@@ -108,15 +111,17 @@ public class DirScheduler {
 
               allocatedWorkDirValues.forEach(
                   value -> {
+                    checkDirectoryClusterPattern(value, "Please provide both directory and cluster values, Ex: directory:cluster");
+
                     val nextRunToInit = queuedRunsForWf.remove(queuedRunsForWf.size() - 1);
                     // update template params
                     val preTemplatedJson =
                         replaceTemplateWithValue(
                             nextRunToInit.getWorkflowParamsJsonStr(),
                             config.getWorkDirTemplate(),
-                            value.split(":")[0]);
+                            getDirectory(value));
 
-                    val templatedJson = addClusterParam(preTemplatedJson, value.split(":")[1]);
+                    val templatedJson = addClusterParam(preTemplatedJson, getCluster(value));
 
                     nextRunToInit.setWorkflowParamsJsonStr(templatedJson);
                     // set dirs
@@ -124,17 +129,17 @@ public class DirScheduler {
                         replaceTemplateWithValue(
                             nextRunToInit.getWorkflowEngineParams().getWorkDir(),
                             config.getWorkDirTemplate(),
-                            value.split(":")[0]);
+                            getDirectory(value));
                     val newProjectDir =
                         replaceTemplateWithValue(
                             nextRunToInit.getWorkflowEngineParams().getProjectDir(),
                             config.getWorkDirTemplate(),
-                            value.split(":")[0]);
+                            getDirectory(value));
                     val newLaunchDir =
                         replaceTemplateWithValue(
                             nextRunToInit.getWorkflowEngineParams().getLaunchDir(),
                             config.getWorkDirTemplate(),
-                            value.split(":")[0]);
+                            getDirectory(value));
                     nextRunToInit.getWorkflowEngineParams().setWorkDir(newWorkDir);
                     nextRunToInit.getWorkflowEngineParams().setProjectDir(newProjectDir);
                     nextRunToInit.getWorkflowEngineParams().setLaunchDir(newLaunchDir);
@@ -169,7 +174,7 @@ public class DirScheduler {
   }
 
   private String matchRunToKnownDirValues(Run run) {
-    return config.getDirValues().stream().filter(run::isAnyDirParamMatched).findFirst().orElse("");
+    return config.getDirValues().stream().filter(d -> run.isAnyDirParamMatched(getDirectory(d))).findFirst().orElse("");
   }
 
   private String replaceTemplateWithValue(
@@ -189,6 +194,21 @@ public class DirScheduler {
       return new String(builder);
     }
     return input;
+  }
+
+  private String getDirectory(String dirValue){
+    return dirValue.split(DIRECTORY_CLUSTER_DELIMITER)[0];
+  }
+
+  private String getCluster(String dirValue){
+    return dirValue.split(DIRECTORY_CLUSTER_DELIMITER)[1];
+  }
+
+  public static void checkDirectoryClusterPattern(String strToCheck, String message){
+    Matcher matcher = Pattern.compile(".*:.*").matcher(strToCheck);
+    if(!matcher.matches()){
+      throw new RuntimeException(message);
+    }
   }
 
   private Stream<String> getStreamOfNextSchedulableDirs(
