@@ -49,6 +49,7 @@ public class SchedulerStreams {
 
   @Value("${scheduler.consumer.bufferDurationSec}")
   private Long bufferDurationSec;
+
   private final RabbitEndpointService rabbit;
   private final GatekeeperClient gatekeeperClient;
   private final DirScheduler dirScheduler;
@@ -124,7 +125,6 @@ public class SchedulerStreams {
                     .then(Mono.just(tx)))
         .subscribe(Transaction::commit);
   }
-
 
   private Flux<WfMgmtRunMsg> fetchAllGatekeeperRunsAndCreateNextInitRunsMsgs() {
     return gatekeeperClient

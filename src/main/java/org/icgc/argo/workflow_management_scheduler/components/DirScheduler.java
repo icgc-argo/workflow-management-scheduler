@@ -28,7 +28,6 @@ public class DirScheduler {
   private final DirSchedulerConfig config;
   private final Map<String, Integer> workflowNameToCosts;
 
-
   public DirScheduler(DirSchedulerConfig config) {
     this.config = config;
     this.workflowNameToCosts =
@@ -57,7 +56,7 @@ public class DirScheduler {
         runsBySchedulingType.getOrDefault(RUN_WAITING_FOR_DIR, new ArrayList<>());
     val runReadyForInit = runsBySchedulingType.getOrDefault(RUN_READY_FOR_INIT, new ArrayList<>());
     val activeRuns = runsBySchedulingType.getOrDefault(ACTIVE_RUN, new ArrayList<>());
-    log.debug("runsWaitingForDir: {}",runsWaitingForDir);
+    log.debug("runsWaitingForDir: {}", runsWaitingForDir);
     if (!runsWaitingForDir.isEmpty()) {
       val scheduledRuns = getNextScheduledRuns(activeRuns, runsWaitingForDir);
       runReadyForInit.addAll(scheduledRuns);
@@ -110,7 +109,9 @@ public class DirScheduler {
 
               allocatedWorkDirValues.forEach(
                   value -> {
-                    checkDirectoryClusterPattern(value, "Please provide both directory and cluster values, Ex: directory:cluster");
+                    checkDirectoryClusterPattern(
+                        value,
+                        "Please provide both directory and cluster values, Ex: directory:cluster");
 
                     val nextRunToInit = queuedRunsForWf.remove(queuedRunsForWf.size() - 1);
                     // update template params
@@ -173,12 +174,16 @@ public class DirScheduler {
   }
 
   private String matchRunToKnownDirValues(Run run) {
-    return config.getDirValues().stream().filter(d -> run.isAnyDirParamMatched(getDirectory(d))).findFirst().orElse("");
+    return config.getDirValues().stream()
+        .filter(d -> run.isAnyDirParamMatched(getDirectory(d)))
+        .findFirst()
+        .orElse("");
   }
 
   private String replaceTemplateWithValue(
       String input, String templateRegex, String templateValue) {
-    log.debug("input, templateRegex, templateValue {} - {} - {}",input, templateRegex, templateValue);
+    log.debug(
+        "input, templateRegex, templateValue {} - {} - {}", input, templateRegex, templateValue);
     if (input != null && input.contains(templateRegex)) {
       return input.replaceAll(templateRegex, templateValue);
     }
@@ -188,7 +193,7 @@ public class DirScheduler {
   private String addClusterParam(String input, String templateValue) {
     if (input != null) {
       StringBuilder builder = new StringBuilder(input);
-      builder.setCharAt(input.lastIndexOf("}"),',');
+      builder.setCharAt(input.lastIndexOf("}"), ',');
       builder.append("\"cluster\"").append(":\"").append(templateValue).append("\"}");
       return new String(builder);
     }
