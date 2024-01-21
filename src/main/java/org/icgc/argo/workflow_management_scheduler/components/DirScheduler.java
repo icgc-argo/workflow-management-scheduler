@@ -5,6 +5,7 @@ import static java.util.Collections.nCopies;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
+import static org.icgc.argo.workflow_management_scheduler.utils.DirectoryUtils.*;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
@@ -55,7 +56,7 @@ public class DirScheduler {
         runsBySchedulingType.getOrDefault(RUN_WAITING_FOR_DIR, new ArrayList<>());
     val runReadyForInit = runsBySchedulingType.getOrDefault(RUN_READY_FOR_INIT, new ArrayList<>());
     val activeRuns = runsBySchedulingType.getOrDefault(ACTIVE_RUN, new ArrayList<>());
-    log.debug("runsWaitingForDir: {}",runsWaitingForDir);
+    log.debug("runsWaitingForDir: {}", runsWaitingForDir);
     if (!runsWaitingForDir.isEmpty()) {
       val scheduledRuns = getNextScheduledRuns(activeRuns, runsWaitingForDir);
       runReadyForInit.addAll(scheduledRuns);
@@ -108,30 +109,37 @@ public class DirScheduler {
 
               allocatedWorkDirValues.forEach(
                   value -> {
+                    checkDirectoryClusterPattern(
+                        value,
+                        "dirValues missing directory or cluster information. Ex: directory:cluster");
+
                     val nextRunToInit = queuedRunsForWf.remove(queuedRunsForWf.size() - 1);
                     // update template params
-                    val templatedJson =
+                    val preTemplatedJson =
                         replaceTemplateWithValue(
                             nextRunToInit.getWorkflowParamsJsonStr(),
                             config.getWorkDirTemplate(),
-                            value);
+                            getDirectory(value));
+
+                    val templatedJson = addClusterParam(preTemplatedJson, getCluster(value));
+
                     nextRunToInit.setWorkflowParamsJsonStr(templatedJson);
                     // set dirs
                     val newWorkDir =
                         replaceTemplateWithValue(
                             nextRunToInit.getWorkflowEngineParams().getWorkDir(),
                             config.getWorkDirTemplate(),
-                            value);
+                            getDirectory(value));
                     val newProjectDir =
                         replaceTemplateWithValue(
                             nextRunToInit.getWorkflowEngineParams().getProjectDir(),
                             config.getWorkDirTemplate(),
-                            value);
+                            getDirectory(value));
                     val newLaunchDir =
                         replaceTemplateWithValue(
                             nextRunToInit.getWorkflowEngineParams().getLaunchDir(),
                             config.getWorkDirTemplate(),
-                            value);
+                            getDirectory(value));
                     nextRunToInit.getWorkflowEngineParams().setWorkDir(newWorkDir);
                     nextRunToInit.getWorkflowEngineParams().setProjectDir(newProjectDir);
                     nextRunToInit.getWorkflowEngineParams().setLaunchDir(newLaunchDir);
@@ -166,14 +174,28 @@ public class DirScheduler {
   }
 
   private String matchRunToKnownDirValues(Run run) {
-    return config.getDirValues().stream().filter(run::isAnyDirParamMatched).findFirst().orElse("");
+    return config.getDirValues().stream()
+        .filter(d -> run.isAnyDirParamMatched(getDirectory(d)))
+        .findFirst()
+        .orElse("");
   }
 
   private String replaceTemplateWithValue(
       String input, String templateRegex, String templateValue) {
-    log.debug("input, templateRegex, templateValue {} - {} - {}",input, templateRegex, templateValue);
+    log.debug(
+        "input, templateRegex, templateValue {} - {} - {}", input, templateRegex, templateValue);
     if (input != null && input.contains(templateRegex)) {
       return input.replaceAll(templateRegex, templateValue);
+    }
+    return input;
+  }
+
+  private String addClusterParam(String input, String templateValue) {
+    if (input != null) {
+      StringBuilder builder = new StringBuilder(input);
+      builder.setCharAt(input.lastIndexOf("}"), ',');
+      builder.append("\"cluster\"").append(":\"").append(templateValue).append("\"}");
+      return new String(builder);
     }
     return input;
   }

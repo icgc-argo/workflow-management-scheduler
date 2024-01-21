@@ -27,8 +27,10 @@ scheduler:
   workDirTemplate: "<SCHEDULED_DIR>"
   maxCostPerDir: 3
   dirValues:
-    - "nfs-local/nfs-1"
-    - "nfs-local/nfs-2"
+    - "nfs-local/nfs-1:default"
+    - "nfs-local/nfs-2:default"
+    - "nfs-external/nfs-1:cluster2"
+    - "nfs-external/nfs-1:cluster2"
   workflows:
     - repository: "argo/hello"
       name: "hello"

@@ -5,8 +5,6 @@ import static org.icgc.argo.workflow_management_scheduler.model.GqlResult.EMPTY_
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.icgc.argo.workflow_management_scheduler.model.GqlResult;
@@ -15,7 +13,6 @@ import org.icgc.argo.workflow_management_scheduler.model.SimpleQuery;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.util.ObjectUtils;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
