@@ -111,7 +111,7 @@ public class DirScheduler {
                   value -> {
                     checkDirectoryClusterPattern(
                         value,
-                        "Please provide both directory and cluster values, Ex: directory:cluster");
+                        "dirValues missing directory or cluster information. Ex: directory:cluster");
 
                     val nextRunToInit = queuedRunsForWf.remove(queuedRunsForWf.size() - 1);
                     // update template params

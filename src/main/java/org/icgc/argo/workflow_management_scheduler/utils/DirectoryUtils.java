@@ -20,7 +20,7 @@ public class DirectoryUtils {
 
   public static void checkDirectoryClusterPattern(String strToCheck, String message) {
     Matcher matcher = Pattern.compile(DIRECTORY_CLUSTER_PATTERN).matcher(strToCheck);
-    if (!matcher.matches()) {
+    if (!matcher.matches() || strToCheck.contains(" ") || strToCheck.split(DIRECTORY_CLUSTER_DELIMITER).length < 2) {
       throw new RuntimeException(message);
     }
   }
